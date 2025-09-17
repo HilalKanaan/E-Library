@@ -3,6 +3,7 @@ using System;
 using Elibrary.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,43 +11,14 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Elibrary.Api.Migrations
 {
     [DbContext(typeof(AppDb))]
-    partial class AppDbModelSnapshot : ModelSnapshot
+    [Migration("20250913134256_AddAuthorFollowsAndNotifications")]
+    partial class AddAuthorFollowsAndNotifications
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.6");
-
-            modelBuilder.Entity("Elibrary.Api.Models.Author", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Bio")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("NameNormalized")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("PhotoUrl")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("NameNormalized")
-                        .IsUnique();
-
-                    b.ToTable("Authors");
-                });
 
             modelBuilder.Entity("Elibrary.Api.Models.AuthorFollow", b =>
                 {
@@ -54,7 +26,12 @@ namespace Elibrary.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("AuthorId")
+                    b.Property<string>("AuthorName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AuthorNormalized")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
@@ -65,9 +42,7 @@ namespace Elibrary.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AuthorId");
-
-                    b.HasIndex("UserId", "AuthorId")
+                    b.HasIndex("UserId", "AuthorNormalized")
                         .IsUnique();
 
                     b.ToTable("AuthorFollows");
@@ -81,9 +56,6 @@ namespace Elibrary.Api.Migrations
 
                     b.Property<string>("Author")
                         .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid?>("AuthorId")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("AvailableCopies")
@@ -119,8 +91,6 @@ namespace Elibrary.Api.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("AuthorId");
 
                     b.ToTable("Books");
                 });
@@ -176,14 +146,8 @@ namespace Elibrary.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid?>("AuthorId")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Body")
                         .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid?>("BookId")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
@@ -253,16 +217,10 @@ namespace Elibrary.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("AvatarUrl")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Bio")
-                        .HasColumnType("TEXT");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("DisplayName")
+                    b.Property<string>("FullName")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PasswordHash")
@@ -287,31 +245,13 @@ namespace Elibrary.Api.Migrations
 
             modelBuilder.Entity("Elibrary.Api.Models.AuthorFollow", b =>
                 {
-                    b.HasOne("Elibrary.Api.Models.Author", "Author")
-                        .WithMany("Followers")
-                        .HasForeignKey("AuthorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("Elibrary.Api.Models.User", "User")
-                        .WithMany("Follows")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Author");
-
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Elibrary.Api.Models.Book", b =>
-                {
-                    b.HasOne("Elibrary.Api.Models.Author", "AuthorEntity")
-                        .WithMany("Books")
-                        .HasForeignKey("AuthorId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("AuthorEntity");
                 });
 
             modelBuilder.Entity("Elibrary.Api.Models.Borrow", b =>
@@ -363,13 +303,6 @@ namespace Elibrary.Api.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Elibrary.Api.Models.Author", b =>
-                {
-                    b.Navigation("Books");
-
-                    b.Navigation("Followers");
-                });
-
             modelBuilder.Entity("Elibrary.Api.Models.Book", b =>
                 {
                     b.Navigation("Borrows");
@@ -380,8 +313,6 @@ namespace Elibrary.Api.Migrations
             modelBuilder.Entity("Elibrary.Api.Models.User", b =>
                 {
                     b.Navigation("Borrows");
-
-                    b.Navigation("Follows");
 
                     b.Navigation("Reviews");
                 });

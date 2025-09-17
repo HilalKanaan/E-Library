@@ -3,6 +3,7 @@ using System;
 using Elibrary.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Elibrary.Api.Migrations
 {
     [DbContext(typeof(AppDb))]
-    partial class AppDbModelSnapshot : ModelSnapshot
+    [Migration("20250913142611_AddAuthorsAndRelations")]
+    partial class AddAuthorsAndRelations
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.6");
@@ -253,16 +256,10 @@ namespace Elibrary.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("AvatarUrl")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Bio")
-                        .HasColumnType("TEXT");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("DisplayName")
+                    b.Property<string>("FullName")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PasswordHash")
@@ -294,7 +291,7 @@ namespace Elibrary.Api.Migrations
                         .IsRequired();
 
                     b.HasOne("Elibrary.Api.Models.User", "User")
-                        .WithMany("Follows")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -380,8 +377,6 @@ namespace Elibrary.Api.Migrations
             modelBuilder.Entity("Elibrary.Api.Models.User", b =>
                 {
                     b.Navigation("Borrows");
-
-                    b.Navigation("Follows");
 
                     b.Navigation("Reviews");
                 });

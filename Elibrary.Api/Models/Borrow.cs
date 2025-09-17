@@ -1,4 +1,5 @@
 namespace Elibrary.Api.Models;
+
 public class Borrow
 {
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -11,4 +12,7 @@ public class Borrow
     public DateTime? ReturnedAt { get; set; }
     public string Status { get; set; } = "Borrowed"; // Borrowed | Returned | Overdue
     public string? Notes { get; set; }
+    public int RenewalsCount { get; set; } = 0;
+    public DateTime? LastRenewedAt { get; set; }
+
 }

@@ -1,6 +1,18 @@
 namespace Elibrary.Api.DTOs;
 
-public record LoginDto(string Username, string Password);
+public class LoginDto
+{
+    public string Username { get; set; } = "";
+    public string Password { get; set; } = "";
+}
 
-// No role here: everyone who registers becomes a normal user
-public record RegisterDto(string Username, string Password, string? FullName);
+public class RegisterDto
+{
+    public string Username { get; set; } = "";
+    public string Password { get; set; } = "";
+
+    // Optional profile fields
+    public string? DisplayName { get; set; }
+    public string? AvatarUrl { get; set; }
+    public string? Bio { get; set; }
+}

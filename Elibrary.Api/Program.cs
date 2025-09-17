@@ -78,7 +78,7 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseCors();               // ⚠️ Enable CORS before auth/endpoints
+app.UseCors();               // Enable CORS before auth/endpoints
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -97,7 +97,10 @@ using (var scope = app.Services.CreateScope())
             Username = "admin",
             PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"),
             Role = "Admin",
-            FullName = "System Admin"
+            // FullName removed — use DisplayName instead
+            DisplayName = "admin",
+            AvatarUrl = null,
+            Bio = null
         });
         db.SaveChanges();
     }

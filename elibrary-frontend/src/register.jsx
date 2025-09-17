@@ -13,8 +13,8 @@ export default function Register() {
     e.preventDefault();
     setMsg("");
     try {
-      await register({ username, password, fullName }); // no role sent
-      setMsg("User created. You can login now.");
+      await register({ username, password, fullName });
+      setMsg("User created. Redirecting to login…");
       setTimeout(() => nav("/login"), 800);
     } catch {
       setMsg("Failed to register");
@@ -22,8 +22,8 @@ export default function Register() {
   };
 
   return (
-    <div className="card">
-      <h2>Register</h2>
+    <div className="card" style={{ maxWidth: 520, margin: "32px auto" }}>
+      <h2>Create your account</h2>
       <form onSubmit={submit} className="row">
         <input
           placeholder="Username"

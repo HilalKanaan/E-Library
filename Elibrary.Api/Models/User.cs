@@ -1,18 +1,23 @@
-using System.Text.Json.Serialization;
+using System;
+using System.Collections.Generic;
 
 namespace Elibrary.Api.Models;
 
 public class User
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
-    public string Username { get; set; } = default!;
-    public string PasswordHash { get; set; } = default!;
-    public string Role { get; set; } = "User"; // Admin or User
-    public string? FullName { get; set; }
+    public Guid Id { get; set; }
+    public string Username { get; set; } = "";
+    public string PasswordHash { get; set; } = "";
+    public string Role { get; set; } = "User";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    [JsonIgnore] public ICollection<Review> Reviews { get; set; } = new List<Review>();
 
+    // Profile fields
+    public string? DisplayName { get; set; }
+    public string? AvatarUrl { get; set; }
+    public string? Bio { get; set; }
 
-    [JsonIgnore]                         // break the self-reference loop
+    // Nav props (make sure these other model files use the SAME namespace: Elibrary.Api.Models)
     public ICollection<Borrow> Borrows { get; set; } = new List<Borrow>();
+    public ICollection<Review> Reviews { get; set; } = new List<Review>();
+    public ICollection<AuthorFollow> Follows { get; set; } = new List<AuthorFollow>();
 }

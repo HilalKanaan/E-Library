@@ -4,6 +4,9 @@ namespace Elibrary.Api.Models;
 
 public class Book
 {
+    public Guid? AuthorId { get; set; }            // nullable for backfill; we’ll populate
+    public Author? AuthorEntity { get; set; }       // nav (different name to avoid clash with string Author)
+
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Isbn { get; set; } = default!;
     public string Title { get; set; } = default!;

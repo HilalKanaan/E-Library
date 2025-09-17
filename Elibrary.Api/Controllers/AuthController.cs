@@ -37,7 +37,13 @@ public class AuthController : ControllerBase
             expires: DateTime.UtcNow.AddHours(6),
             signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256)
         );
-        return Ok(new { token = new JwtSecurityTokenHandler().WriteToken(token), role = user.Role, username = user.Username });
+
+        return Ok(new
+        {
+            token = new JwtSecurityTokenHandler().WriteToken(token),
+            role = user.Role,
+            username = user.Username
+        });
     }
 
     // Public registration always creates a normal user
@@ -47,19 +53,25 @@ public class AuthController : ControllerBase
         if (string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.Password))
             return BadRequest("Username and password are required.");
 
-        if (await _db.Users.AnyAsync(u => u.Username == dto.Username))
+        var uname = dto.Username.Trim();
+
+        if (await _db.Users.AnyAsync(u => u.Username == uname))
             return Conflict("Username already exists");
 
         var user = new User
         {
-            Username = dto.Username.Trim(),
+            Username = uname,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-            FullName = string.IsNullOrWhiteSpace(dto.FullName) ? null : dto.FullName.Trim(),
-            Role = "User" // 🔒 force normal user
+            Role = "User",
+            DisplayName = string.IsNullOrWhiteSpace(dto.DisplayName) ? uname : dto.DisplayName!.Trim(),
+            AvatarUrl = string.IsNullOrWhiteSpace(dto.AvatarUrl) ? null : dto.AvatarUrl!.Trim(),
+            Bio = string.IsNullOrWhiteSpace(dto.Bio) ? null : dto.Bio!.Trim()
         };
+
 
         _db.Users.Add(user);
         await _db.SaveChangesAsync();
+
         return Created($"/api/users/{user.Id}", new { user.Id, user.Username, user.Role });
     }
 }

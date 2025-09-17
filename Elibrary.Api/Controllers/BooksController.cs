@@ -14,6 +14,8 @@ public class BooksController : ControllerBase
     private readonly AppDb _db;
     public BooksController(AppDb db) { _db = db; }
 
+    private static string Norm(string? s) => (s ?? "").Trim().ToLowerInvariant();
+
     [HttpGet]
     public async Task<IActionResult> List(
         [FromQuery] string? q,
@@ -43,7 +45,7 @@ public class BooksController : ControllerBase
         {
             var a = author.Trim();
             queryable = queryable.Where(b =>
-                EF.Functions.Like(EF.Functions.Collate(b.Author, "NOCASE"), $"%{a}%"));
+                EF.Functions.Like(EF.Functions.Collate(b.Author ?? string.Empty, "NOCASE"), $"%{a}%"));
         }
 
         if (!string.IsNullOrWhiteSpace(genre))
@@ -74,7 +76,6 @@ public class BooksController : ControllerBase
         return Ok(new { total, items, page, pageSize });
     }
 
-    // lightweight details object with rating summary
     [HttpGet("{id:guid}/details")]
     public async Task<IActionResult> Details(Guid id)
     {
@@ -102,13 +103,30 @@ public class BooksController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create(BookCreateUpdateDto dto)
     {
+        // Resolve author entity (you already have this wired in your version)
+        Author? authorEntity = null;
+        if (dto.AuthorId != null && dto.AuthorId != Guid.Empty)
+        {
+            authorEntity = await _db.Authors.FindAsync(dto.AuthorId.Value);
+            if (authorEntity is null) return BadRequest("Author not found.");
+        }
+        else if (!string.IsNullOrWhiteSpace(dto.Author))
+        {
+            var norm = Norm(dto.Author);
+            authorEntity = await _db.Authors.FirstOrDefaultAsync(a => a.NameNormalized == norm);
+            if (authorEntity is null) return BadRequest("AuthorId required (or create/select an author first).");
+        }
+        else return BadRequest("AuthorId is required.");
+
         var entity = new Book
         {
             Isbn = dto.Isbn,
             Title = dto.Title,
-            Author = dto.Author,
+            AuthorId = authorEntity.Id,
+            Author = authorEntity.Name, // keep denormalized text
             Genre = dto.Genre,
-            PublishedYear = dto.PublishedYear,
+            // 🔧 fix: published year from nullable
+            PublishedYear = dto.PublishedYear.GetValueOrDefault(),
             Description = dto.Description,
             CoverUrl = dto.CoverUrl,
             TotalCopies = dto.TotalCopies,
@@ -116,8 +134,33 @@ public class BooksController : ControllerBase
                 dto.AvailableCopies == 0 ? dto.TotalCopies : dto.AvailableCopies,
                 0, dto.TotalCopies)
         };
+
         _db.Books.Add(entity);
         await _db.SaveChangesAsync();
+
+        // (Notify followers code stays as you had it)
+        var followerIds = await _db.AuthorFollows
+            .Where(f => f.AuthorId == authorEntity.Id)
+            .Select(f => f.UserId)
+            .ToListAsync();
+
+        if (followerIds.Count > 0)
+        {
+            var payload = System.Text.Json.JsonSerializer.Serialize(new { bookId = entity.Id, author = authorEntity.Name, title = entity.Title });
+            var notifs = followerIds.Select(uid => new Notification
+            {
+                UserId = uid,
+                Kind = "author_new_book",
+                Title = $"New book by {authorEntity.Name}",
+                Body = entity.Title,
+                AuthorId = authorEntity.Id,
+                BookId = entity.Id,
+                DataJson = payload
+            });
+            _db.Notifications.AddRange(notifs);
+            await _db.SaveChangesAsync();
+        }
+
         return CreatedAtAction(nameof(GetById), new { id = entity.Id }, entity);
     }
 
@@ -127,12 +170,37 @@ public class BooksController : ControllerBase
     {
         var b = await _db.Books.FindAsync(id);
         if (b is null) return NotFound();
-        b.Isbn = dto.Isbn; b.Title = dto.Title; b.Author = dto.Author;
-        b.Genre = dto.Genre; b.PublishedYear = dto.PublishedYear;
-        b.Description = dto.Description; b.CoverUrl = dto.CoverUrl;
+
+        Author? authorEntity = null;
+        if (dto.AuthorId != null && dto.AuthorId != Guid.Empty)
+        {
+            authorEntity = await _db.Authors.FindAsync(dto.AuthorId.Value);
+            if (authorEntity is null) return BadRequest("Author not found.");
+        }
+        else if (!string.IsNullOrWhiteSpace(dto.Author))
+        {
+            var norm = Norm(dto.Author);
+            authorEntity = await _db.Authors.FirstOrDefaultAsync(a => a.NameNormalized == norm);
+        }
+
+        b.Isbn = dto.Isbn;
+        b.Title = dto.Title;
+
+        if (authorEntity != null)
+        {
+            b.AuthorId = authorEntity.Id;
+            b.Author = authorEntity.Name;
+        }
+
+        b.Genre = dto.Genre;
+        // 🔧 fix: keep old year if dto.PublishedYear is null
+        b.PublishedYear = dto.PublishedYear.GetValueOrDefault(b.PublishedYear);
+        b.Description = dto.Description;
+        b.CoverUrl = dto.CoverUrl;
         b.TotalCopies = dto.TotalCopies;
         b.AvailableCopies = Math.Clamp(dto.AvailableCopies, 0, b.TotalCopies);
         b.UpdatedAt = DateTime.UtcNow;
+
         await _db.SaveChangesAsync();
         return NoContent();
     }
